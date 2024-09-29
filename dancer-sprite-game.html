@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dancing Sprite Dodging Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        #gameContainer { text-align: center; }
+        canvas { border: 2px solid #333; background-color: #fff; }
+        #score { font-size: 24px; margin: 10px 0; }
+        #gameOver { display: none; margin-top: 20px; }
+        #replayBtn { font-size: 18px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        #replayBtn:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div id="score">Score: 0</div>
+        <div id="gameOver">
+            <h2>Game Over!</h2>
+            <p>Your score: <span id="finalScore"></span></p>
+            <button id="replayBtn">Play Again</button>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const replayBtn = document.getElementById('replayBtn');
+
+        let dancerX, dancerY, score, gameOver;
+        const dancerSpeed = 7; // Increased from 5 to 7
+        const obstacles = [];
+        const obstacleCount = 5;
+        const maxObstacleSpeed = 2; // Reduced from 4 to 2
+
+        function drawDancer(x, y, color = 'black', tutuColor = 'pink') {
+            ctx.save();
+            ctx.translate(x, y);
+
+            // Head
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, -30, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(0, -20);
+            ctx.lineTo(0, 10);
+            ctx.stroke();
+
+            // Arms
+            ctx.beginPath();
+            ctx.moveTo(0, -10);
+            ctx.lineTo(-20, 0);
+            ctx.moveTo(0, -10);
+            ctx.lineTo(20, -20);
+            ctx.stroke();
+
+            // Legs
+            ctx.beginPath();
+            ctx.moveTo(0, 10);
+            ctx.lineTo(-20, 40);
+            ctx.moveTo(0, 10);
+            ctx.lineTo(20, 40);
+            ctx.stroke();
+
+            // Tutu
+            ctx.beginPath();
+            ctx.ellipse(0, 10, 20, 10, 0, 0, Math.PI * 2);
+            ctx.fillStyle = tutuColor;
+            ctx.fill();
+            ctx.strokeStyle = 'purple';
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function createObstacle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                speedX: (Math.random() - 0.5) * maxObstacleSpeed * 2,
+                speedY: (Math.random() - 0.5) * maxObstacleSpeed * 2
+            };
+        }
+
+        function updateObstacles() {
+            obstacles.forEach(obstacle => {
+                obstacle.x += obstacle.speedX;
+                obstacle.y += obstacle.speedY;
+
+                if (obstacle.x < 0 || obstacle.x > canvas.width) obstacle.speedX *= -1;
+                if (obstacle.y < 0 || obstacle.y > canvas.height) obstacle.speedY *= -1;
+
+                drawDancer(obstacle.x, obstacle.y, 'blue', 'lightblue');
+            });
+        }
+
+        function checkCollision() {
+            return obstacles.some(obstacle => 
+                Math.hypot(obstacle.x - dancerX, obstacle.y - dancerY) < 40
+            );
+        }
+
+        function gameLoop() {
+            if (gameOver) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updateObstacles();
+            drawDancer(dancerX, dancerY);
+
+            if (checkCollision()) {
+                endGame();
+                return;
+            }
+
+            score++;
+            scoreElement.textContent = 'Score: ' + score;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameOver = true;
+            finalScoreElement.textContent = score;
+            gameOverElement.style.display = 'block';
+        }
+
+        function resetGame() {
+            dancerX = canvas.width / 2;
+            dancerY = canvas.height / 2;
+            score = 0;
+            gameOver = false;
+            obstacles.length = 0;
+            for (let i = 0; i < obstacleCount; i++) {
+                obstacles.push(createObstacle());
+            }
+            scoreElement.textContent = 'Score: 0';
+            gameOverElement.style.display = 'none';
+            gameLoop();
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (gameOver) return;
+            switch(event.key) {
+                case 'ArrowUp': dancerY = Math.max(40, dancerY - dancerSpeed); break;
+                case 'ArrowDown': dancerY = Math.min(canvas.height - 40, dancerY + dancerSpeed); break;
+                case 'ArrowLeft': dancerX = Math.max(20, dancerX - dancerSpeed); break;
+                case 'ArrowRight': dancerX = Math.min(canvas.width - 20, dancerX + dancerSpeed); break;
+            }
+        });
+
+        replayBtn.addEventListener('click', resetGame);
+        resetGame();
+    </script>
+</body>
+</html>
